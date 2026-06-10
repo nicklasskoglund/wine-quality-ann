@@ -216,3 +216,28 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ── Project specific ───────────────────────────────────────────────────────────
+
+# Data — download locally, do not commit
+data/raw/
+data/processed/
+*.csv
+*.xlsx
+
+# Saved models — generated locally when running the pipeline
+models/
+*.h5
+*.keras
+*.pkl
+
+# TensorFlow / Keras logs & checkpoints
+logs/
+*.ckpt
+*.ckpt.*
+checkpoint
+
+# Generated outputs — recreated by running notebooks/main.py
+reports/figures/
+*.png
+*.jpg
