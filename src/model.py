@@ -1,13 +1,21 @@
 # ==============================================================================
 # src/model.py
 # ------------------------------------------------------------------------------
-# Defines the ANN architecture for the Wine Quality binary classification task.
+# Defines ANN architectures for the Wine Quality binary classification task.
 #
 # Functions:
-#   build_model(input_dim, ...)  → compiles and returns a Keras Sequential model
+#   build_baseline_model(input_dim)  → simple, unregularized baseline ANN
+#   build_model(input_dim, ...)      → regularized ANN (L2 + Dropout),
+#                                        used for Grid Search / optimization (Step 4)
 #
-# Architecture (baseline):
-#   Input layer  → input_dim features (11)
+# --- Baseline architecture (build_baseline_model) ---
+#   Input layer    → input_dim features (11)
+#   Hidden layer 1 → 16 neurons, ReLU
+#   Hidden layer 2 → 8 neurons, ReLU
+#   Output layer   → 1 neuron, Sigmoid (binary classification)
+#
+# --- Optimized architecture (build_model) ---
+#   Input layer    → input_dim features (11)
 #   Hidden layer 1 → 64 neurons, ReLU, L2 regularization
 #   Dropout 1      → 30% dropout
 #   Hidden layer 2 → 32 neurons, ReLU, L2 regularization
@@ -16,7 +24,7 @@
 #
 # Loss function : Binary Crossentropy
 # Optimizer     : Adam
-# Metric        : Accuracy, AUC
+# Metric        : Accuracy (baseline) / Accuracy, AUC (optimized)
 # ==============================================================================
 
 import tensorflow as tf
@@ -26,8 +34,59 @@ from tensorflow.keras import layers, regularizers
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 LEARNING_RATE = 0.001   # Adam optimizer default learning rate
-L2_LAMBDA     = 0.001   # L2 regularization strength
-DROPOUT_RATE  = 0.3     # Fraction of neurons dropped during training
+L2_LAMBDA     = 0.001   # L2 regularization strength (used in build_model)
+DROPOUT_RATE  = 0.3     # Fraction of neurons dropped during training (used in build_model)
+
+# Baseline architecture sizes
+BASELINE_HIDDEN_1_UNITS = 16   # Neurons in baseline hidden layer 1
+BASELINE_HIDDEN_2_UNITS = 8    # Neurons in baseline hidden layer 2
+
+
+def build_baseline_model(input_dim: int) -> keras.Sequential:
+    """
+    Build and compile a simple baseline ANN for binary wine quality classification.
+
+    This architecture is intentionally simple — two small hidden layers with
+    ReLU activation, no regularization — to serve as a reference point
+    ("baseline") against which the regularized, tuned architecture
+    (see build_model) can be compared in Step 4 (Grid Search optimization).
+
+    Architecture:
+        Input → Dense(16, ReLU) → Dense(8, ReLU) → Dense(1, Sigmoid)
+
+    Args:
+        input_dim (int): Number of input features (e.g. 11 for WineQT.csv
+                          after preprocessing)
+
+    Returns:
+        keras.Sequential: Compiled Keras model, ready for training
+    """
+    # ── Build model ────────────────────────────────────────────────────────────
+    model = keras.Sequential(
+        [
+            # ── Input ──────────────────────────────────────────────────────────
+            keras.Input(shape=(input_dim,), name="input"),
+
+            # ── Hidden layer 1 ─────────────────────────────────────────────────
+            layers.Dense(BASELINE_HIDDEN_1_UNITS, activation="relu", name="hidden_1"),
+
+            # ── Hidden layer 2 ─────────────────────────────────────────────────
+            layers.Dense(BASELINE_HIDDEN_2_UNITS, activation="relu", name="hidden_2"),
+
+            # ── Output layer ───────────────────────────────────────────────────
+            layers.Dense(1, activation="sigmoid", name="output"),
+        ],
+        name="baseline_ann",
+    )
+
+    # ── Compile ────────────────────────────────────────────────────────────────
+    model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+        loss="binary_crossentropy",
+        metrics=["accuracy"],
+    )
+
+    return model
 
 
 def build_model(
@@ -37,7 +96,8 @@ def build_model(
     dropout_rate: float  = DROPOUT_RATE,
 ) -> keras.Sequential:
     """
-    Build and compile the ANN model for binary wine quality classification.
+    Build and compile the regularized ANN model for binary wine quality
+    classification. Used for Grid Search optimization (Step 4).
 
     The model uses:
         - ReLU activation in hidden layers (avoids vanishing gradient)
@@ -88,7 +148,7 @@ def build_model(
 
     # ── Compile ────────────────────────────────────────────────────────────────
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+        optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
         loss="binary_crossentropy",
         metrics=[
             "accuracy",
