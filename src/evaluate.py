@@ -34,7 +34,11 @@ from tensorflow import keras
 
 
 # ── Constants ──────────────────────────────────────────────────────────────────
-FIGURES_DIR = "reports/figures"
+# Resolve to <project_root>/reports/figures regardless of the caller's
+# current working directory (e.g. main.py at project root vs. a notebook
+# running from notebooks/).
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FIGURES_DIR  = os.path.join(PROJECT_ROOT, "reports", "figures")
 THRESHOLD   = 0.5   # Probability threshold for binary classification
 
 os.makedirs(FIGURES_DIR, exist_ok=True)

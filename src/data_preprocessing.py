@@ -39,10 +39,21 @@ def load_data(filepath: str):
 
     Steps:
         1. Load CSV file
-        2. Drop duplicate rows
-        3. Create binary label: quality >= 6 → 1 (good), else → 0 (poor)
-        4. Drop original quality column and any ID columns
-        5. Split into train / val / test (stratified)
+        2. Drop ID column (must happen BEFORE deduplication — see note below)
+        3. Drop duplicate rows
+        4. Create binary label: quality >= 6 → 1 (good), else → 0 (poor)
+        5. Drop original quality column
+        6. Split into train / val / test (stratified)
+
+    Note on duplicate handling:
+        The `Id` column is unique per row by definition, so running
+        `drop_duplicates()` while `Id` is still present would never find
+        any duplicates — even if the underlying physicochemical profiles
+        are identical. EDA (01_EDA.ipynb) found 125 such duplicate rows
+        (excluding `Id`). These must be removed BEFORE the train/val/test
+        split to prevent data leakage: an identical sample could otherwise
+        end up in both the training set and the test set, giving an
+        artificially inflated (and misleading) test accuracy.
 
     Args:
         filepath (str): Path to the raw CSV file (e.g. data/raw/WineQT.csv)
@@ -55,16 +66,18 @@ def load_data(filepath: str):
     df = pd.read_csv(filepath)
     print(f"   Loaded  : {df.shape[0]:,} rows × {df.shape[1]} columns")
 
+    # ── Drop ID column if present ──────────────────────────────────────────────
+    # Must happen BEFORE drop_duplicates(), since Id is unique per row and
+    # would otherwise mask true duplicate physicochemical profiles.
+    if "Id" in df.columns:
+        df = df.drop(columns=["Id"])
+        print(f"   Dropped column     : Id")
+
     # ── Drop duplicates ────────────────────────────────────────────────────────
     n_before = len(df)
     df = df.drop_duplicates()
     n_dropped = n_before - len(df)
     print(f"   Duplicates removed : {n_dropped}")
-
-    # ── Drop ID column if present ──────────────────────────────────────────────
-    if "Id" in df.columns:
-        df = df.drop(columns=["Id"])
-        print(f"   Dropped column     : Id")
 
     # ── Create binary label ────────────────────────────────────────────────────
     df["label"] = (df["quality"] >= QUALITY_THRESHOLD).astype(int)
