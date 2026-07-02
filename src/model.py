@@ -148,7 +148,7 @@ def build_model(
 
     # ── Compile ────────────────────────────────────────────────────────────────
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss="binary_crossentropy",
         metrics=[
             "accuracy",
