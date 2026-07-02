@@ -58,7 +58,8 @@ wine-quality-ann/
 │   ├── 01_EDA.ipynb                  ← Exploratory Data Analysis
 │   ├── 02_baseline_model.ipynb       ← Baseline ANN — 2 hidden layers
 │   ├── 03_optimization.ipynb         ← Grid Search, Dropout, L2 regularization
-│   └── 04_story.ipynb                ← Data story / presentation
+│   ├── 04_final_evaluation.ipynb     ← Final baseline vs. optimized comparison
+│   └── 05_story.ipynb                ← Data story / presentation
 │
 ├── src/
 │   ├── __init__.py                   ← package definition
@@ -85,6 +86,35 @@ wine-quality-ann/
 | Baseline ANN    | Simple 2-layer network — reference point          |
 | Optimized ANN   | Dropout + L2 regularization — reduces overfitting |
 | Grid Search ANN | Systematic hyperparameter tuning — best model     |
+
+---
+
+## Results
+
+| Metric                               | Baseline | Optimized (Grid Search) |
+|---------------------------------------|----------|---------------------------|
+| Test Accuracy                        | 0.6732   | **0.6863**                |
+| Test AUC                             | 0.7528   | **0.7594**                |
+| Precision (Good)                     | 0.74     | 0.74                       |
+| Recall (Good)                        | 0.61     | 0.63                       |
+| False Negatives (Good wines missed)  | 32       | 30                         |
+| Trainable params                     | 337      | 929                        |
+
+The optimized model — found via a 48-combination grid search over units,
+dropout rate, L2 regularization, learning rate, and batch size — outperforms
+the baseline on every metric above.
+
+**Winning hyperparameters:** units=32, dropout=0.4, L2=0.001,
+learning_rate=0.001, batch_size=16 (validation AUC = 0.8922).
+
+### Recommendation
+
+With ~67–69% accuracy, the model is not precise enough to fully replace
+human wine tasting. We recommend using it as a **triage / prioritization
+tool** rather than an automatic accept/reject system: let the model rank
+incoming samples by predicted quality so human expertise can focus on the
+borderline cases, rather than letting the model make the final
+accept/reject decision on its own.
 
 ---
 
