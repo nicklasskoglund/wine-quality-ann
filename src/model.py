@@ -63,8 +63,7 @@ def build_baseline_model(input_dim: int) -> keras.Sequential:
         Input → Dense(16, ReLU) → Dense(8, ReLU) → Dense(1, Sigmoid)
 
     Args:
-        input_dim (int): Number of input features (e.g. 11 for WineQT.csv
-                          after preprocessing)
+        input_dim (int): Number of input features (e.g. 11 for WineQT.csv after preprocessing)
 
     Returns:
         keras.Sequential: Compiled Keras model, ready for training
@@ -118,6 +117,8 @@ def build_model(
 
     Args:
         input_dim     (int)   : Number of input features (columns in X_train)
+        units         (int)   : Number of neurons in hidden layer 1.
+                                 Hidden layer 2 uses units // 2 neurons.
         learning_rate (float) : Learning rate for Adam optimizer
         l2_lambda     (float) : L2 regularization penalty strength
         dropout_rate  (float) : Fraction of neurons to drop during training
