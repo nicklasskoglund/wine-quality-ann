@@ -16,7 +16,7 @@
 #
 # --- Optimized architecture (build_model) ---
 #   Input layer    → input_dim features (11)
-#   Hidden layer 1 → 64 neurons, ReLU, L2 regularization
+#   Hidden layer 1 → 64 neurons (default, configurable via `units`), ReLU, L2 reg.
 #   Dropout 1      → 30% dropout
 #   Hidden layer 2 → 32 neurons, ReLU, L2 regularization
 #   Dropout 2      → 30% dropout
@@ -33,6 +33,7 @@ from tensorflow.keras import layers, regularizers
 
 
 # ── Constants ──────────────────────────────────────────────────────────────────
+UNITS         = 64      # Neurons in build_model's hidden layer 1 (hidden layer 2 uses UNITS // 2)
 LEARNING_RATE = 0.001   # Adam optimizer default learning rate
 L2_LAMBDA     = 0.001   # L2 regularization strength (used in build_model)
 DROPOUT_RATE  = 0.3     # Fraction of neurons dropped during training (used in build_model)
@@ -91,6 +92,7 @@ def build_baseline_model(input_dim: int) -> keras.Sequential:
 
 def build_model(
     input_dim: int,
+    units: int            = UNITS,
     learning_rate: float = LEARNING_RATE,
     l2_lambda: float     = L2_LAMBDA,
     dropout_rate: float  = DROPOUT_RATE,
@@ -109,6 +111,8 @@ def build_model(
 
     Args:
         input_dim     (int)   : Number of input features (columns in X_train)
+        units         (int)   : Number of neurons in hidden layer 1.
+                                 Hidden layer 2 uses units // 2 neurons.
         learning_rate (float) : Learning rate for Adam optimizer
         l2_lambda     (float) : L2 regularization penalty strength
         dropout_rate  (float) : Fraction of neurons to drop during training
@@ -124,7 +128,7 @@ def build_model(
 
             # ── Hidden layer 1 ─────────────────────────────────────────────────
             layers.Dense(
-                64,
+                units,
                 activation="relu",
                 kernel_regularizer=regularizers.L2(l2_lambda),
                 name="hidden_1",
@@ -133,7 +137,7 @@ def build_model(
 
             # ── Hidden layer 2 ─────────────────────────────────────────────────
             layers.Dense(
-                32,
+                units // 2,
                 activation="relu",
                 kernel_regularizer=regularizers.L2(l2_lambda),
                 name="hidden_2",
@@ -148,7 +152,7 @@ def build_model(
 
     # ── Compile ────────────────────────────────────────────────────────────────
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss="binary_crossentropy",
         metrics=[
             "accuracy",
