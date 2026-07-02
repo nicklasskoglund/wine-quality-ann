@@ -13,9 +13,14 @@
 #   ModelCheckpoint → saves the best model weights during training
 #                    (based on lowest val_loss)
 #
-# Training config (baseline):
+# Training config:
 #   Epochs    : 100 (EarlyStopping will likely trigger earlier)
-#   Batch size: 32
+#   Batch size: generic fallback default only (see BATCH_SIZE below) —
+#               NOT the tuned value. main.py always passes the actual
+#               batch_size from models/best_params.json (Step 4 grid
+#               search); this constant is only used when train_model()
+#               is called directly without an explicit batch_size,
+#               e.g. from a notebook.
 # ==============================================================================
 
 import os
@@ -25,7 +30,8 @@ from tensorflow import keras
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 EPOCHS          = 100   # Maximum number of training epochs
-BATCH_SIZE      = 32    # Number of samples per gradient update
+BATCH_SIZE      = 32    # Generic fallback default, NOT the tuned value —
+                        # see src/model.py:load_best_params()
 PATIENCE        = 10    # EarlyStopping: epochs to wait before stopping
 MODEL_SAVE_PATH = "models/best_model.keras"
 
