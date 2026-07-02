@@ -16,17 +16,24 @@
 #
 # --- Optimized architecture (build_model) ---
 #   Input layer    → input_dim features (11)
-#   Hidden layer 1 → 64 neurons (default, configurable via `units`), ReLU, L2 reg.
-#   Dropout 1      → 30% dropout
-#   Hidden layer 2 → 32 neurons, ReLU, L2 regularization
-#   Dropout 2      → 30% dropout
+#   Hidden layer 1 → `units` neurons, ReLU, L2 regularization, Dropout
+#   Hidden layer 2 → `units` // 2 neurons, ReLU, L2 regularization, Dropout
 #   Output layer   → 1 neuron, Sigmoid (binary classification)
+#
+#   Actual hyperparameter values (units, dropout_rate, l2_lambda,
+#   learning_rate, batch_size) come from Step 4's grid search results —
+#   see load_best_params() below and models/best_params.json. The module
+#   constants further down are generic fallback defaults only, used when
+#   no tuned parameters are supplied; they do not represent "the
+#   optimized model".
 #
 # Loss function : Binary Crossentropy
 # Optimizer     : Adam
 # Metric        : Accuracy (baseline) / Accuracy, AUC (optimized)
 # ==============================================================================
 
+import os
+import json
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers, regularizers
@@ -111,8 +118,6 @@ def build_model(
 
     Args:
         input_dim     (int)   : Number of input features (columns in X_train)
-        units         (int)   : Number of neurons in hidden layer 1.
-                                 Hidden layer 2 uses units // 2 neurons.
         learning_rate (float) : Learning rate for Adam optimizer
         l2_lambda     (float) : L2 regularization penalty strength
         dropout_rate  (float) : Fraction of neurons to drop during training
@@ -161,3 +166,68 @@ def build_model(
     )
 
     return model
+
+
+def load_best_params(filepath: str = "models/best_params.json") -> dict:
+    """
+    Load tuned hyperparameters produced by the Step 4 grid search.
+
+    This is the single source of truth for the winning hyperparameters
+    (units, dropout_rate, l2_lambda, learning_rate, batch_size). Reading
+    from this file — rather than hardcoding the winning values as module
+    constants — prevents the code and the grid search results from
+    silently drifting apart if the grid search is ever re-run with
+    different results.
+
+    By design, this function does NOT fall back to guessed defaults if
+    the file is missing: main.py's pipeline is documented (in the README
+    and presentation) as producing "the optimized model", so running it
+    without the actual winning hyperparameters would silently produce a
+    different, undocumented model. Callers are expected to stop the run
+    and surface a clear error instead.
+
+    Args:
+        filepath (str): Path to the JSON file saved by the grid search
+                         notebook (03_optimization.ipynb)
+
+    Returns:
+        dict: Hyperparameters with keys:
+              "units", "dropout_rate", "l2_lambda",
+              "learning_rate", "batch_size"
+              (plus result fields "val_auc", "test_auc", "test_accuracy"
+              kept for traceability, though not used by build_model/
+              train_model)
+
+    Raises:
+        FileNotFoundError: If `filepath` does not exist — typically means
+                            Step 4 (grid search) has not been run yet.
+        KeyError: If the file exists but is missing one or more of the
+                   required hyperparameter keys.
+    """
+    # ── Check file exists ──────────────────────────────────────────────────────
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(
+            f"Could not find tuned hyperparameters at '{filepath}'. "
+            f"This file is produced by the Step 4 grid search "
+            f"(notebooks/03_optimization.ipynb). Run that notebook first "
+            f"to generate it before running main.py."
+        )
+
+    # ── Load and validate ──────────────────────────────────────────────────────
+    with open(filepath, "r") as f:
+        params = json.load(f)
+
+    required_keys = {"units", "dropout_rate", "l2_lambda", "learning_rate", "batch_size"}
+    missing_keys = required_keys - params.keys()
+    if missing_keys:
+        raise KeyError(
+            f"'{filepath}' is missing required hyperparameter key(s): "
+            f"{sorted(missing_keys)}. Expected keys: {sorted(required_keys)}."
+        )
+
+    print(f"   Loaded tuned hyperparameters ← {filepath}")
+    print(f"   units={params['units']}, dropout_rate={params['dropout_rate']}, "
+          f"l2_lambda={params['l2_lambda']}, learning_rate={params['learning_rate']}, "
+          f"batch_size={params['batch_size']}")
+
+    return params
